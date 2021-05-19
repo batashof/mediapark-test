@@ -4,19 +4,20 @@ import {
     Box,
     Button,
     Container,
-    Grid,
     GridList,
-    GridListTile,
-    IconButton, Link,
+    GridListTile, GridListTileBar,
     makeStyles,
     TextField,
     Toolbar,
-    Typography
+
 } from "@material-ui/core";
+import SearchIcon from '@material-ui/icons/Search';
+
 import {useForm} from "react-hook-form";
 import axios from "axios";
 
 import {useLocation, useHistory} from "react-router-dom";
+import LikeButton from "../like-button/like-button";
 
 const useStyles = makeStyles((theme) => ({
     textField: {
@@ -29,97 +30,87 @@ const useStyles = makeStyles((theme) => ({
     },
     form: {
         width: '75%',
+        marginBottom: theme.spacing(1),
 
-    }
+    },
+    gridList: {
+        transform: 'translateZ(0)',
+    },
+    titleBar: {
+        background:
+            'linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, ' +
+            'rgba(0,0,0,0.3) 70%, rgba(0,0,0,0) 100%)',
+    },
+    icon: {
+        color: 'white',
+    },
 }));
 
 const Main = () => {
     const classes = useStyles();
-    const { register, handleSubmit, watch, formState: { errors } } = useForm();
+    const {register, handleSubmit} = useForm();
     const [images, setImages] = useState([]);
-    const [token, setToken] = useState([]);
+    const url = `${process.env.REACT_APP_UNSPLASH_URL}/oauth/authorize?client_id=${process.env.REACT_APP_ACCESS_KEY}&redirect_uri=http://localhost:3000/callback&response_type=code&scope=public+write_likes+read_user+write_user+write_photos+read_photos`;
 
     let location = useLocation();
     const history = useHistory();
     const code = location.search.substring(6);
-    useEffect(()=>{
-        if (code) {
-            axios({
-                method: "post",
-                url: `${process.env.REACT_APP_UNSPLASH_URL}/oauth/token?client_id=${process.env.REACT_APP_ACCESS_KEY}&client_secret=${process.env.REACT_APP_SECRER_KEY}&code=${code}&redirect_uri=http://localhost:3000/callback&grant_type=authorization_code`,
+
+    const unsplashToken = `Bearer ${localStorage.getItem("token")}`;
+    const unsplashClientId = `Client-ID ${process.env.REACT_APP_ACCESS_KEY}`;
+
+    const login = (code) => {
+        axios({
+            method: "post",
+            url: `${process.env.REACT_APP_UNSPLASH_URL}/oauth/token?client_id=${process.env.REACT_APP_ACCESS_KEY}&client_secret=${process.env.REACT_APP_SECRER_KEY}&code=${code}&redirect_uri=http://localhost:3000/callback&grant_type=authorization_code`,
+
+        })
+            .then((res) => {
+                localStorage.setItem("token", res.data.access_token)
+                history.push("/")
 
             })
-                .then((res) => {
-                    localStorage.setItem("token", res.data.access_token)
-                    history.push("/")
-                    setToken(res.data.access_token)
-
-                    console.log(res.data.access_token)
-                })
-                .catch((error) => {
-                    console.log(error)
-                })
+            .catch((error) => {
+                console.log(error)
+            })
+    }
+    useEffect(() => {
+        if (code) {
+            login(code)
         }
     }, [code])
-    console.log(location.search.substring(6))
-    const onSubmit = data => {
-        const unsplashToken = `Bearer ${localStorage.getItem("token")}`;
-        const unsplashClientId = `Client-ID ${process.env.REACT_APP_ACCESS_KEY}`;
+
+    const search = (query) => {
         axios({
             method: "get",
-            url: `${process.env.REACT_APP_API_UNSPLASH_URL}/search/photos?page=1&query=${data.search}`,
+            url: `${process.env.REACT_APP_API_UNSPLASH_URL}/search/photos?page=1&query=${query}`,
             headers: {
                 Authorization: localStorage.getItem("token") ? unsplashToken : unsplashClientId
             },
 
         })
-            .then((res)=> {
+            .then((res) => {
                 setImages(res.data.results)
-
-                console.log(res.data)
             })
             .catch((error) => {
                 console.log(error)
             })
     }
-    // <a href={`${process.env.REACT_APP_UNSPLASH_URL}/oauth/authorize?client_id=${process.env.REACT_APP_ACCESS_KEY}&redirect_uri=urn:ietf:wg:oauth:2.0:oob&response_type=code&scope=public`} color="inherit">Login</a>
-
-    const handleLogin = () => {
-        axios({
-            method: "get",
-            url: `${process.env.REACT_APP_UNSPLASH_URL}/oauth/authorize?client_id=${process.env.REACT_APP_ACCESS_KEY}&redirect_uri=urn:ietf:wg:oauth:2.0:oob&response_type=code&scope=public`,
-        })
-            .then((res)=> {
-
-                console.log(res)
-            })
-            .catch((error) => {
-                console.log(error)
-            })
-        // axios({
-        //     method: "post",
-        //     url: `${process.env.REACT_APP_UNSPLASH_URL}/oauth/token?client_id=${process.env.REACT_APP_ACCESS_KEY}&client_secret=${process.env.REACT_APP_SECRER_KEY}&grant_type="code"`,
-        //
-        //
-        // })
-        //     .then((res)=> {
-        //
-        //         console.log(res.data)
-        //     })
-        //     .catch((error) => {
-        //         console.log(error)
-        //     })
+    const onSubmit = data => {
+        search(data.search);
     }
+
 
     const handleLogout = () => {
         localStorage.removeItem("token")
         history.push("/")
     }
 
-    const url = `${process.env.REACT_APP_UNSPLASH_URL}/oauth/authorize?client_id=${process.env.REACT_APP_ACCESS_KEY}&redirect_uri=http://localhost:3000/callback&response_type=code&scope=public`;
+
+
 
     return (
-        <box display="flex" alignItems="center" height="100%" flexDirection="column">
+        <Box>
             <AppBar position="static">
                 <Toolbar>
                     {localStorage.getItem("token") ?
@@ -130,25 +121,33 @@ const Main = () => {
 
                 </Toolbar>
             </AppBar>
-        <Container>
-            <form className={classes.form} onSubmit={handleSubmit(onSubmit)}>
-                <TextField className={classes.textField} {...register("search")}
-                           variant="outlined" placeholder="Search" width="50%"/>
-                <Button variant="contained" type="submit">Search</Button>
-            </form>
-            <GridList>
-                {images.map((image, key)=>
-                    <GridListTile key={key}>
-                        <img src={image.urls.small}/>
+            <Container>
+                <Box display="flex" alignItems="center" justifyContent="center">
+                    <form className={classes.form} onSubmit={handleSubmit(onSubmit)}>
+                        <TextField className={classes.textField} {...register("search")}
+                                   variant="outlined" placeholder="Search" width="50%"/>
+                        <Button variant="contained" type="submit"><SearchIcon/>Search</Button>
+                    </form>
+                </Box>
+                <GridList cellHeight={200} spacing={2} cols={3} className={classes.gridList}>
+                    {images.map((image, key) =>
+                        <GridListTile key={key}>
+                            <img src={image.urls.small}/>
+                            <GridListTileBar
+                                titlePosition="top"
+                                actionIcon={
+                                    localStorage.getItem("token") ? <LikeButton image={image} unsplashToken={unsplashToken}/>
+                                        : ""
 
-                    </GridListTile>
-                )}
-
-
-            </GridList>
-
-        </Container>
-        </box>
+                                }
+                                actionPosition="left"
+                                className={classes.titleBar}
+                            />
+                        </GridListTile>
+                    )}
+                </GridList>
+            </Container>
+        </Box>
     )
 }
 
