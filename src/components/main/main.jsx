@@ -107,8 +107,6 @@ const Main = () => {
     }
 
 
-
-
     return (
         <Box>
             <AppBar position="static">
@@ -132,7 +130,7 @@ const Main = () => {
                 <GridList cellHeight={200} spacing={2} cols={3} className={classes.gridList}>
                     {images.map((image, key) =>
                         <GridListTile key={key}>
-                            <img src={image.urls.small}/>
+                            <img src={image.urls.small} alt={image.id}/>
                             <GridListTileBar
                                 titlePosition="top"
                                 actionIcon={

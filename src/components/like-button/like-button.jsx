@@ -13,7 +13,6 @@ const LikeButton = ({unsplashToken, image}) => {
     const classes = useStyles();
     const [color, setColor] = useState(image.liked_by_user);
 
-
     const switchLike = (image) => {
         let method = "post";
         if (color) {
@@ -29,7 +28,7 @@ const LikeButton = ({unsplashToken, image}) => {
             },
 
         })
-            .then((res)=> {
+            .then((res) => {
                 setColor(res.data.photo.liked_by_user)
             })
             .catch((error) => {
@@ -37,7 +36,7 @@ const LikeButton = ({unsplashToken, image}) => {
             })
     }
     return (
-        <IconButton onClick={()=>switchLike(image)} aria-label={"fav-icon"} className={classes.icon}>
+        <IconButton onClick={() => switchLike(image)} aria-label={"fav-icon"} className={classes.icon}>
             <FavoriteIcon color={color ? "secondary" : ""}/>
         </IconButton>
     )
